@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Volunteer Confirmation Flow — Architecture Sketch</title>
+<style>
+  :root{
+    --ink:#1e2530;
+    --sub:#5b6472;
+    --paper:#f8f9fb;
+    --line:#cbd3dd;
+    --existing:#ffffff;
+    --existing-line:#9aa5b3;
+    --truth:#eefaf1;
+    --truth-line:#1f9d55;
+    --new:#fff8e8;
+    --new-line:#c2820a;
+    --claude:#eef0ff;
+    --claude-line:#4a3fd6;
+    --arrow:#4d5766;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    color:var(--ink);
+    padding:28px 20px 60px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+  header{margin-bottom:6px;}
+  h1{font-size:23px;margin:0 0 4px;letter-spacing:-0.01em;}
+  .subtitle{color:var(--sub);font-size:14.5px;margin:0 0 22px;}
+  .subtitle b{color:var(--ink);}
+  .diagram-card{
+    background:#fff;border:1px solid var(--line);border-radius:14px;
+    padding:8px 8px 4px;margin-bottom:22px;overflow-x:auto;
+  }
+  svg{display:block;min-width:1080px;width:100%;height:auto;}
+  .node-box{fill:var(--existing);stroke:var(--existing-line);stroke-width:2;}
+  .node-truth{fill:var(--truth);stroke:var(--truth-line);stroke-width:3;}
+  .node-new{fill:var(--new);stroke:var(--new-line);stroke-width:2.5;stroke-dasharray:7 5;}
+  .node-claude{fill:var(--claude);stroke:var(--claude-line);stroke-width:3;}
+  .badge{fill:var(--ink);}
+  .badge-text{fill:#fff;font-size:13px;font-weight:700;font-family:inherit;}
+  .title-text{font-size:15px;font-weight:700;fill:var(--ink);font-family:inherit;}
+  .sub-text{font-size:12px;fill:var(--sub);font-family:inherit;}
+  .tag-text{font-size:10.5px;font-weight:700;letter-spacing:0.04em;font-family:inherit;}
+  .flow-line{stroke:var(--arrow);stroke-width:2.5;fill:none;stroke-linejoin:round;}
+  .fork-dot{fill:var(--arrow);}
+  .fork-label{font-size:11px;fill:var(--sub);font-family:inherit;font-style:italic;}
+  .arrow-label{font-size:11.5px;fill:var(--sub);font-family:inherit;font-style:italic;}
+  .lane-label{font-size:12px;font-weight:700;fill:var(--sub);letter-spacing:0.05em;font-family:inherit;text-transform:uppercase;}
+
+  .legend{display:flex;flex-wrap:wrap;gap:10px 14px;margin-bottom:24px;}
+  .legend-item{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--sub);background:#fff;border:1px solid var(--line);border-radius:9px;padding:7px 13px 7px 10px;}
+  .swatch{width:16px;height:16px;border-radius:4px;display:block;flex:0 0 16px;}
+  .sw-existing{background:#fff;border:2px solid var(--existing-line);}
+  .sw-truth{background:var(--truth);border:2.5px solid var(--truth-line);}
+  .sw-new{background:var(--new);border:2px dashed var(--new-line);}
+  .sw-claude{background:var(--claude);border:2.5px solid var(--claude-line);}
+
+  .grid{display:grid;grid-template-columns:1.3fr 1fr;gap:20px;align-items:start;}
+  @media (max-width:820px){.grid{grid-template-columns:1fr;}}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 22px;}
+  .panel h2{font-size:14.5px;margin:0 0 12px;}
+  .steps{margin:0;padding:0;list-style:none;}
+  .steps li{display:flex;gap:11px;padding:8px 0;border-bottom:1px solid #eef0f3;font-size:13.5px;line-height:1.45;}
+  .steps li:last-child{border-bottom:none;}
+  .steps .num{
+    flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;
+    font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px;
+  }
+  .steps b{display:block;color:var(--ink);}
+  .steps .desc{color:var(--sub);}
+
+  .callout{border-radius:12px;padding:14px 16px;font-size:13px;line-height:1.5;margin-bottom:14px;}
+  .callout:last-child{margin-bottom:0;}
+  .callout.mcp{background:var(--claude);border:1.5px solid var(--claude-line);}
+  .callout.budget{background:var(--new);border:1.5px solid var(--new-line);}
+  .callout b{display:block;margin-bottom:4px;font-size:13px;}
+
+  footer{margin-top:22px;font-size:12px;color:var(--sub);text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Volunteer confirmation flow — proposed architecture</h1>
+    <p class="subtitle">A sketch, not a build. Nothing here is wired up yet — <b>this is for reasoning about the shape</b> before anything gets built.</p>
+  </header>
+
+  <div class="legend">
+    <div class="legend-item"><span class="swatch sw-existing"></span>Tool you already have</div>
+    <div class="legend-item"><span class="swatch sw-truth"></span>Single source of truth</div>
+    <div class="legend-item"><span class="swatch sw-new"></span>Still need to pick a platform</div>
+    <div class="legend-item"><span class="swatch sw-claude"></span>Where Claude fits (via MCP)</div>
+  </div>
+
+  <div class="diagram-card">
+    <svg viewBox="0 0 1220 640" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#4d5766"/>
+        </marker>
+      </defs>
+
+      <!-- Lane labels -->
+      <text x="24" y="26" class="lane-label">Signup, once</text>
+      <text x="24" y="176" class="lane-label">Reminder loop, every shift</text>
+      <text x="24" y="378" class="lane-label">Monday check-in, every week</text>
+
+      <!-- ===== TOP ROW: signup pipeline ===== -->
+      <!-- 1 Volunteer -->
+      <g>
+        <rect x="24" y="46" width="150" height="92" rx="12" class="node-box"/>
+        <circle cx="24" cy="46" r="13" class="badge" transform="translate(13,0)"/>
+        <text x="37" y="50" text-anchor="middle" class="badge-text">1</text>
+        <text x="99" y="82" text-anchor="middle" class="title-text">Volunteer</text>
+        <text x="99" y="100" text-anchor="middle" class="sub-text">fills out a shift</text>
+        <text x="99" y="114" text-anchor="middle" class="sub-text">signup online</text>
+      </g>
+
+      <!-- 2 Signup page -->
+      <g>
+        <rect x="224" y="46" width="160" height="92" rx="12" class="node-box"/>
+        <circle cx="224" cy="46" r="13" class="badge" transform="translate(13,0)"/>
+        <text x="237" y="50" text-anchor="middle" class="badge-text">2</text>
+        <text x="304" y="80" text-anchor="middle" class="title-text">Signup page</text>
+        <text x="304" y="98" text-anchor="middle" class="sub-text">your prototype page,</text>
+        <text x="304" y="112" text-anchor="middle" class="sub-text">or the Google Form</text>
+      </g>
+
+      <!-- 3 Google Sheet -->
+      <g>
+        <rect x="444" y="46" width="150" height="92" rx="12" class="node-box"/>
+        <circle cx="444" cy="46" r="13" class="badge" transform="translate(13,0)"/>
+        <text x="457" y="50" text-anchor="middle" class="badge-text">3</text>
+        <text x="519" y="80" text-anchor="middle" class="title-text">Google Sheet</text>
+        <text x="519" y="98" text-anchor="middle" class="sub-text">raw responses land</text>
+        <text x="519" y="112" text-anchor="middle" class="sub-text">here automatically</text>
+      </g>
+
+      <!-- 4 Auto-sync -->
+      <g>
+        <rect x="654" y="46" width="150" height="92" rx="12" class="node-box"/>
+        <circle cx="654" cy="46" r="13" class="badge" transform="translate(13,0)"/>
+        <text x="667" y="50" text-anchor="middle" class="badge-text">4</text>
+        <text x="729" y="80" text-anchor="middle" class="title-text">Auto-sync</text>
+        <text x="729" y="98" text-anchor="middle" class="sub-text">small script — replaces</text>
+        <text x="729" y="112" text-anchor="middle" class="sub-text">your Sunday re-typing</text>
+      </g>
+
+      <!-- 5 Airtable — source of truth -->
+      <g>
+        <rect x="864" y="26" width="292" height="132" rx="14" class="node-truth"/>
+        <circle cx="864" cy="26" r="14" class="badge" transform="translate(14,1)"/>
+        <text x="878" y="31" text-anchor="middle" class="badge-text">5</text>
+        <text x="1010" y="66" text-anchor="middle" class="title-text">Airtable — Roster &amp; Shifts</text>
+        <text x="1010" y="86" text-anchor="middle" class="sub-text">Name / Phone / Routes / Shift</text>
+        <text x="1010" y="104" text-anchor="middle" class="sub-text">the one list everything reads from</text>
+        <text x="1010" y="126" text-anchor="middle" class="tag-text" fill="#1f9d55">SINGLE SOURCE OF TRUTH</text>
+      </g>
+
+      <!-- top row arrows -->
+      <path d="M174,92 L224,92" class="flow-line" marker-end="url(#arrow)"/>
+      <path d="M384,92 L444,92" class="flow-line" marker-end="url(#arrow)"/>
+      <path d="M594,92 L654,92" class="flow-line" marker-end="url(#arrow)"/>
+      <path d="M804,92 L864,92" class="flow-line" marker-end="url(#arrow)"/>
+
+      <!-- fork down from Airtable: one straight line to the trigger below it,
+           one routed around the right side so it never crosses box 6 -->
+      <circle cx="1010" cy="158" r="4.5" class="fork-dot"/>
+      <path d="M1010,158 L1010,196" class="flow-line" marker-end="url(#arrow)"/>
+      <path d="M1010,158 L1010,172 L1200,172 L1200,345 L1010,345 L1010,395" class="flow-line" marker-end="url(#arrow)"/>
+      <text x="1105" y="166" text-anchor="middle" class="fork-label">splits into two automations ↓</text>
+
+      <!-- ===== BRANCH 1: reminders (row 2) ===== -->
+      <!-- 6 Scheduled trigger -->
+      <g>
+        <rect x="864" y="196" width="292" height="88" rx="12" class="node-box"/>
+        <circle cx="864" cy="196" r="13" class="badge" transform="translate(13,0)"/>
+        <text x="877" y="200" text-anchor="middle" class="badge-text">6</text>
+        <text x="1010" y="230" text-anchor="middle" class="title-text">Scheduled trigger</text>
+        <text x="1010" y="248" text-anchor="middle" class="sub-text">fires automatically the</text>
+        <text x="1010" y="262" text-anchor="middle" class="sub-text">day before each shift</text>
+      </g>
+
+      <!-- 7 SMS tool (new) -->
+      <g>
+        <rect x="574" y="196" width="250" height="88" rx="12" class="node-new"/>
+        <circle cx="574" cy="196" r="13" class="badge" transform="translate(13,0)"/>
+        <text x="587" y="200" text-anchor="middle" class="badge-text">7</text>
+        <text x="699" y="226" text-anchor="middle" class="title-text">Text reminder service</text>
+        <text x="699" y="244" text-anchor="middle" class="sub-text">sends the actual text —</text>
+        <text x="699" y="258" text-anchor="middle" class="sub-text">Gmail/Slack can't text phones</text>
+        <text x="699" y="274" text-anchor="middle" class="tag-text" fill="#c2820a">PICK A PLATFORM — SEE BELOW</text>
+      </g>
+
+      <path d="M864,240 L824,240" class="flow-line" marker-end="url(#arrow)"/>
+      <path d="M699,196 L699,152 L99,152 L99,138" class="flow-line" marker-end="url(#arrow)"/>
+      <text x="399" y="145" text-anchor="middle" class="arrow-label">reminder text, day before shift</text>
+
+      <!-- ===== BRANCH 2: Monday digest (row 3) ===== -->
+      <!-- 8 Claude + MCP -->
+      <g>
+        <rect x="864" y="395" width="292" height="100" rx="14" class="node-claude"/>
+        <circle cx="864" cy="395" r="14" class="badge" transform="translate(14,1)"/>
+        <text x="878" y="400" text-anchor="middle" class="badge-text">8</text>
+        <text x="1010" y="430" text-anchor="middle" class="title-text">Claude, via MCP</text>
+        <text x="1010" y="448" text-anchor="middle" class="sub-text">reads Airtable, writes a</text>
+        <text x="1010" y="462" text-anchor="middle" class="sub-text">plain-English shift summary</text>
+        <text x="1010" y="480" text-anchor="middle" class="tag-text" fill="#4a3fd6">NO NEW TOOL NEEDED</text>
+      </g>
+
+      <!-- 9 Slack digest -->
+      <g>
+        <rect x="574" y="401" width="250" height="88" rx="12" class="node-box"/>
+        <circle cx="574" cy="401" r="13" class="badge" transform="translate(13,0)"/>
+        <text x="587" y="405" text-anchor="middle" class="badge-text">9</text>
+        <text x="699" y="431" text-anchor="middle" class="title-text">Slack — #volunteers</text>
+        <text x="699" y="449" text-anchor="middle" class="sub-text">posted automatically,</text>
+        <text x="699" y="463" text-anchor="middle" class="sub-text">every Monday morning</text>
+        <text x="699" y="479" text-anchor="middle" class="tag-text" fill="#1f9d55">✓ YOUR MONDAY CHECK</text>
+      </g>
+
+      <path d="M864,445 L824,445" class="flow-line" marker-end="url(#arrow)"/>
+      <path d="M574,445 L 300,445" class="flow-line" marker-end="url(#arrow)"/>
+
+      <!-- 10 Priya & Diane -->
+      <g>
+        <rect x="70" y="401" width="230" height="88" rx="12" class="node-box"/>
+        <text x="185" y="431" text-anchor="middle" class="title-text">You &amp; Diane</text>
+        <text x="185" y="449" text-anchor="middle" class="sub-text">see signups-by-shift and</text>
+        <text x="185" y="463" text-anchor="middle" class="sub-text">no-shows, no manual pull</text>
+      </g>
+
+    </svg>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Reading the map, in order</h2>
+      <ol class="steps">
+        <li><span class="num">1–2</span><span><b>Signup stays roughly what it is today</b><span class="desc"> — your page (or the Form) is still where a volunteer picks a shift. No change forced here.</span></span></li>
+        <li><span class="num">3–4</span><span><b>The Sheet still exists, but a script does the re-typing</b><span class="desc"> — this replaces the "Sundays, if I have time" step. Nothing new to learn, it just runs itself.</span></span></li>
+        <li><span class="num">5</span><span><b>Airtable becomes the one real list</b><span class="desc"> — instead of Form + Sheet + your memory of the rules, there's one roster everything else reads from.</span></span></li>
+        <li><span class="num">6–7</span><span><b>The text-day-before happens without you</b><span class="desc"> — a trigger fires the day before a shift and a texting tool sends it. This is the one new piece of software in the whole sketch.</span></span></li>
+        <li><span class="num">8–9</span><span><b>Claude checks Airtable and posts to Slack</b><span class="desc"> — a plain-language "who signed up for what this week" message, in the Slack you already use, every Monday. That message showing up <i>is</i> your signal it worked.</span></span></li>
+      </ol>
+    </div>
+
+    <div>
+      <div class="panel" style="margin-bottom:16px;">
+        <h2>What's MCP?</h2>
+        <div class="callout mcp">
+          <b>The connector, not a new product</b>
+          It's what lets Claude actually reach into Airtable and Slack directly — read the roster, post the digest — instead of you copy-pasting data into a chat window. It comes with the Claude plan you already have. Box 8 on the diagram is where it lives; nothing else on the page depends on understanding it further than that.
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Box 7 — picking a texting platform</h2>
+        <div class="callout budget">
+          <b>Gmail and Slack can't text a phone, so box 7 needs one of these:</b>
+          <ul style="margin:8px 0 0 18px;padding:0;">
+            <li style="margin-bottom:6px;"><b style="display:inline;">Airtable Automations + Twilio</b> — leanest option, since Airtable already holds the roster.</li>
+            <li style="margin-bottom:6px;"><b style="display:inline;">Zapier or Make.com + a texting service</b> (SimpleTexting, Textedly, TextMagic) — fully point-and-click, several have nonprofit pricing.</li>
+            <li><b style="display:inline;">A volunteer-outreach platform</b> (e.g. CallHub) — more built in, likely more than we need at our size right now.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Sketch only — no automation described here has been built. Prepared for Priya's review before any build work starts.</footer>
+</div>
+</body>
+</html>
