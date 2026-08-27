@@ -23,11 +23,6 @@ A small, dependency-free prototype for a food bank volunteer signup and shift-re
 This is intentionally fake authentication for demonstration purposes. It is **not secure production authentication**.
 
 ## Files
-
-- `index.html` — landing page
-- `prototype/index.html` — volunteer-facing signup prototype
-- `dashboard/index.html` — coordinator demo
-- `architecture.html` — proposed system architecture
 - `app.html` — self-contained combined application copy
 - `README.md` — project notes
 
