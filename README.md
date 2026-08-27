@@ -6,7 +6,7 @@ A small, dependency-free prototype for a food bank volunteer signup and shift-re
 
 - Volunteer signup for available shifts
 - Age-eligibility checks
-- Guardian consent for 14–15-year-old warehouse volunteers
+- Guardian consent for 14–15-year-old warehouse volunteers (need to add a feature for accepting consent forms)
 - Phone/email validation
 - Signup records stored in the browser
 - Coordinator login
